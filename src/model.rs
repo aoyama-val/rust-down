@@ -43,6 +43,9 @@ pub struct Hito {
     pub x: i32,
     pub y: i32,
     pub hitonum: i32,
+    pub muteki: bool,
+    pub omori: bool,
+    pub flashing: bool,
     pub walktimer: Timer,
     pub flashtimer: Timer,
     pub wavetimer: Timer,
@@ -56,12 +59,24 @@ impl Hito {
             x: Field::WID / 2 - 1,
             y: Field::HEI / 2,
             hitonum: 0,
+            muteki: false,
+            omori: false,
+            flashing: false,
             walktimer: Timer::new(Wait::WALK),
             flashtimer: Timer::new(Wait::HITOFLASH),
             wavetimer: Timer::new(Wait::HITOWAVE),
             mutekiflashtimer: Timer::new(Wait::MUTEKIFLASH),
             haribreaktimer: Timer::new(Wait::HARIBREAK),
         }
+    }
+
+    pub fn start_flashing(&mut self) {
+        self.flashing = true;
+    }
+
+    pub fn stop_flashing(&mut self) {
+        self.flashing = false;
+        self.hitonum = 0;
     }
 }
 
@@ -161,6 +176,9 @@ pub struct Game {
     pub score: i32,
     pub highscore: Vec<i32>,
     pub falltimer: Timer,
+    pub damagetimer: Timer,
+    pub damaging: bool,
+    pub flashing: bool,
 }
 
 impl Game {
@@ -192,6 +210,9 @@ impl Game {
             score: 0,
             highscore: Vec::new(),
             falltimer: Timer::new(Wait::FALL),
+            damagetimer: Timer::new(Wait::DAMAGE),
+            damaging: false,
+            flashing: false,
         };
 
         // 最初の床を生成
@@ -231,6 +252,7 @@ impl Game {
         }
 
         self.update_hito(command, dt);
+        self.update_damage(dt);
 
         let callback = || {
             self.scroll(dt);
@@ -261,6 +283,37 @@ impl Game {
                 if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
                     self.hito.x += 1;
                 }
+            }
+        }
+
+        if self.hito.flashing {
+            self.hito.flashtimer.add(dt);
+            while self.hito.flashtimer.is_reached() {
+                self.hito.hitonum = 1 - self.hito.hitonum; // 0:white 1:red
+            }
+        }
+    }
+
+    pub fn update_damage(&mut self, dt: u32) {
+        if self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
+            && !self.hito.muteki
+        {
+            if self.damaging == false {
+                self.damaging = true;
+                self.hito.start_flashing();
+                self.flashing = true;
+            }
+            self.damagetimer.add(dt);
+            while self.damagetimer.is_reached() {
+                self.requested_sounds.push("damage.wav");
+                self.life -= 1;
+            }
+        } else {
+            if self.damaging {
+                self.damaging = false;
+                self.hito.stop_flashing();
+                self.flashing = false;
+                self.damagetimer.reset();
             }
         }
     }

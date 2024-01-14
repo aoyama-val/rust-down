@@ -16,6 +16,13 @@ use crate::model::*;
 pub const SCREEN_W: i32 = 640;
 pub const SCREEN_H: i32 = 480;
 
+mod Sound {
+    pub const MAX_CHANNELS: i32 = 10;
+    pub const CH_DAMAGE: i32 = 4; // channel for damage.wav;
+    pub const CH_MUTEKI: i32 = 3;
+    pub const CH_BREAK: i32 = 2;
+}
+
 struct Image<'a> {
     texture: Texture<'a>,
     #[allow(dead_code)]
@@ -73,6 +80,7 @@ pub fn main() -> Result<(), String> {
 
     println!("Keys:");
     println!("  Left, Right : Move player");
+    println!("  Space       : Restart when game over");
 
     let mut before;
     let mut now = timer.ticks();
@@ -97,14 +105,8 @@ pub fn main() -> Result<(), String> {
                     if code == Keycode::Escape {
                         break 'running;
                     }
-                    if game.is_over {
+                    if game.is_over && code == Keycode::Space {
                         game = Game::new();
-                    } else {
-                        // match code {
-                        //     Keycode::Left => command = Command::Left,
-                        //     Keycode::Right => command = Command::Right,
-                        //     _ => {}
-                        // };
                     }
                 }
                 _ => {}
@@ -131,7 +133,7 @@ fn init_mixer() {
         chunk_size,
     )
     .expect("cannot open audio");
-    mixer::allocate_channels(10);
+    mixer::allocate_channels(Sound::MAX_CHANNELS);
 }
 
 fn load_resources<'a>(
@@ -316,18 +318,20 @@ fn render(
         .unwrap();
 
     // render gauge
-    let color = if game.is_gauge_red() {
-        Color::RGB(255, 0, 0)
-    } else {
-        Color::RGB(255, 255, 255)
-    };
-    canvas.set_draw_color(color);
-    canvas.fill_rect(Rect::new(
-        Field::RIGHT + 80,
-        SCREEN_H / 10 * 7,
-        (((SCREEN_W - (CHAR * Field::WID) - 108) * game.life) / 100) as u32,
-        16,
-    ))?;
+    if game.life > 0 {
+        let color = if game.is_gauge_red() {
+            Color::RGB(255, 0, 0)
+        } else {
+            Color::RGB(255, 255, 255)
+        };
+        canvas.set_draw_color(color);
+        canvas.fill_rect(Rect::new(
+            Field::RIGHT + 80,
+            SCREEN_H / 10 * 7,
+            (((SCREEN_W - (CHAR * Field::WID) - 108) * game.life) / 100) as u32,
+            16,
+        ))?;
+    }
 
     // render effects
 
@@ -389,9 +393,14 @@ fn play_sounds(game: &mut Game, resources: &Resources) {
             .chunks
             .get(&sound_key.to_string())
             .expect("cannot get sound");
-        sdl2::mixer::Channel::all()
-            .play(&chunk, 0)
-            .expect("cannot play sound");
+
+        let channel = match *sound_key {
+            "damage.wav" => sdl2::mixer::Channel(Sound::CH_DAMAGE),
+            "muteki.wav" => sdl2::mixer::Channel(Sound::CH_MUTEKI),
+            "break.wav" => sdl2::mixer::Channel(Sound::CH_BREAK),
+            _ => sdl2::mixer::Channel::all(),
+        };
+        channel.play(&chunk, 0).expect("cannot play sound");
     }
     game.requested_sounds = Vec::new();
 }
