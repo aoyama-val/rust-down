@@ -380,10 +380,6 @@ impl Game {
         }
     }
 
-    pub fn is_gauge_red(&self) -> bool {
-        false
-    }
-
     pub fn rand(&mut self, max: i32) -> i32 {
         self.rng.gen_range(0..max)
     }
