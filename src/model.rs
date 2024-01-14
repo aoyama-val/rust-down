@@ -1,6 +1,8 @@
 use rand::prelude::*;
 use std::{fs::File, num, time};
 
+use self::Field::{FLOORWID, HEI};
+
 pub const CHAR: i32 = 16;
 pub const HARI_PER_FLOOR: i32 = 30; // 30%
 pub const ITEM_PERCENT: i32 = 15;
@@ -247,7 +249,8 @@ impl Game {
         }
 
         let _type;
-        if self.rand(100) < HARI_PER_FLOOR {
+        if self.rand(100) <= HARI_PER_FLOOR {
+            // randを<=で比較しているのはバグで、正しくは<だと思う
             _type = Chara::HARI;
         } else {
             _type = Chara::BLOCK;
@@ -357,6 +360,20 @@ impl Game {
 
         if self.isfloor {
             let (pos, _type) = self.generate_floor();
+
+            if self.rand(100) <= ITEM_PERCENT && _type != Chara::HARI {
+                let r = self.rand(100);
+                let item_type = if r <= 33 {
+                    Chara::STAR
+                } else if r <= 66 {
+                    Chara::PARA
+                } else {
+                    Chara::OMORI
+                };
+                let x = pos + (FLOORWID / 2);
+                let y = HEI - 2;
+                self.data[y as usize][x as usize] = item_type;
+            }
         }
 
         // invert @isfloor
