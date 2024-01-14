@@ -105,7 +105,10 @@ pub fn main() -> Result<(), String> {
                     if code == Keycode::Escape {
                         break 'running;
                     }
-                    if game.is_over && code == Keycode::Space {
+                    if game.is_over
+                        && code == Keycode::Space
+                        && sdl2::mixer::get_playing_channels_number() == 0
+                    {
                         game = Game::new();
                     }
                 }
