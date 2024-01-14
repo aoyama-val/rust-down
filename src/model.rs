@@ -17,6 +17,21 @@ pub mod Field {
     pub const FLOORWID: i32 = 5; // 1個の床のセル数
 }
 
+pub mod Wait {
+    pub const FALL: i32 = 40;
+    pub const FALL_PARA: i32 = 60;
+    pub const FALL_OMORI: i32 = 20;
+    pub const WALK: i32 = 83;
+    pub const DAMAGE: i32 = 10; // ms/damage (life=100)
+    pub const HITOFLASH: i32 = 80;
+    pub const HITOWAVE: i32 = 200;
+    pub const MUTEKIFLASH: i32 = 80;
+    pub const GAUGEFLASH: i32 = 60;
+    pub const HARIBREAK: i32 = 140;
+    pub const GAMEOVER: i32 = 3400; // ms
+    pub const DEMO_TIME: i32 = 1000 * 60 * 3; // 5min
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Command {
     None,
@@ -28,6 +43,11 @@ pub struct Hito {
     pub x: i32,
     pub y: i32,
     pub hitonum: i32,
+    pub walktimer: Timer,
+    pub flashtimer: Timer,
+    pub wavetimer: Timer,
+    pub mutekiflashtimer: Timer,
+    pub haribreaktimer: Timer,
 }
 
 impl Hito {
@@ -36,6 +56,11 @@ impl Hito {
             x: Field::WID / 2 - 1,
             y: Field::HEI / 2,
             hitonum: 0,
+            walktimer: Timer::new(Wait::WALK),
+            flashtimer: Timer::new(Wait::HITOFLASH),
+            wavetimer: Timer::new(Wait::HITOWAVE),
+            mutekiflashtimer: Timer::new(Wait::MUTEKIFLASH),
+            haribreaktimer: Timer::new(Wait::HARIBREAK),
         }
     }
 }
@@ -77,6 +102,47 @@ impl Floor {
     }
 }
 
+pub struct Timer {
+    waittime: i32,
+    wait: i32,
+}
+
+impl Timer {
+    pub fn new(waittime: i32) -> Timer {
+        let mut timer = Timer {
+            waittime: 0,
+            wait: 0,
+        };
+        timer.set_wait(waittime);
+        timer.reset();
+        timer
+    }
+
+    pub fn reset(&mut self) {
+        self.wait = 0;
+    }
+
+    pub fn add(&mut self, dt: u32) {
+        self.wait += dt as i32;
+    }
+
+    pub fn is_reached(&mut self) -> bool {
+        if self.wait >= self.waittime {
+            self.wait -= self.waittime;
+            if self.wait < self.waittime {
+                self.reset();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    pub fn set_wait(&mut self, t: i32) {
+        assert!(t > 0);
+        self.waittime = t;
+    }
+}
+
 pub struct Game {
     pub rng: StdRng,
     pub is_over: bool,
@@ -94,6 +160,7 @@ pub struct Game {
     pub fps: i32,
     pub score: i32,
     pub highscore: Vec<i32>,
+    pub falltimer: Timer,
 }
 
 impl Game {
@@ -124,6 +191,7 @@ impl Game {
             fps: 0,
             score: 0,
             highscore: Vec::new(),
+            falltimer: Timer::new(Wait::FALL),
         };
 
         // 最初の床を生成
@@ -163,7 +231,14 @@ impl Game {
         }
 
         self.update_hito(command, dt);
-        self.scroll(dt);
+
+        let callback = || {
+            self.scroll(dt);
+        };
+        self.falltimer.add(dt);
+        while self.falltimer.is_reached() {
+            self.scroll(dt);
+        }
 
         if self.life <= 0 {
             self.is_over = true;
@@ -176,13 +251,16 @@ impl Game {
     }
 
     pub fn update_hito(&mut self, command: Command, dt: u32) {
-        if command == Command::Left {
-            if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
-                self.hito.x -= 1;
-            }
-        } else if command == Command::Right {
-            if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
-                self.hito.x += 1;
+        self.hito.walktimer.add(dt);
+        while self.hito.walktimer.is_reached() {
+            if command == Command::Left {
+                if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
+                    self.hito.x -= 1;
+                }
+            } else if command == Command::Right {
+                if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
+                    self.hito.x += 1;
+                }
             }
         }
     }

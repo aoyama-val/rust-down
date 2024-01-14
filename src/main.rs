@@ -81,6 +81,12 @@ pub fn main() -> Result<(), String> {
 
     'running: loop {
         let mut command = Command::None;
+        let keyboard_state = event_pump.keyboard_state();
+        if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
+            command = Command::Left;
+        } else if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Right) {
+            command = Command::Right;
+        }
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
@@ -94,11 +100,11 @@ pub fn main() -> Result<(), String> {
                     if game.is_over {
                         game = Game::new();
                     } else {
-                        match code {
-                            Keycode::Left => command = Command::Left,
-                            Keycode::Right => command = Command::Right,
-                            _ => {}
-                        };
+                        // match code {
+                        //     Keycode::Left => command = Command::Left,
+                        //     Keycode::Right => command = Command::Right,
+                        //     _ => {}
+                        // };
                     }
                 }
                 _ => {}
