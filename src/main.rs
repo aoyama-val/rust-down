@@ -121,13 +121,13 @@ pub fn main() -> Result<(), String> {
 fn init_mixer() {
     let chunk_size = 1_024;
     mixer::open_audio(
-        mixer::DEFAULT_FREQUENCY,
-        mixer::DEFAULT_FORMAT,
-        mixer::DEFAULT_CHANNELS,
+        22010, // デフォルトは22050
+        mixer::AUDIO_S8,
+        1, // monoral
         chunk_size,
     )
     .expect("cannot open audio");
-    let _mixer_context = mixer::init(mixer::InitFlag::MP3).expect("cannot init mixer");
+    mixer::allocate_channels(10);
 }
 
 fn load_resources<'a>(
