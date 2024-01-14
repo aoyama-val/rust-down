@@ -87,6 +87,7 @@ pub struct Game {
     pub requested_musics: Vec<&'static str>,
     pub hito: Hito,
     pub floors: Vec<Floor>,
+    pub isfloor: bool,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
 }
 
@@ -111,6 +112,7 @@ impl Game {
             requested_musics: Vec::new(),
             hito: Hito::new(),
             floors: Vec::new(),
+            isfloor: false,
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
         };
 
@@ -120,11 +122,13 @@ impl Game {
     pub fn reset(&mut self) {
         self.life = 100;
 
+        self.isfloor = false;
+
         // 最初の床を生成
         self.generate_floor();
     }
 
-    pub fn generate_floor(&mut self) {
+    pub fn generate_floor(&mut self) -> (i32, Chara) {
         // self.floors = Vec::new();
         // self.floors.push(Floor::new(
         //     Chara::BLOCK,
@@ -151,6 +155,8 @@ impl Game {
             self.data[(Field::HEI - 1) as usize][(pos + i) as usize] = _type;
         }
 
+        return (pos, _type);
+
         // self.floors.push(Floor::new(_type, pos, Field::HEI - 1));
     }
 
@@ -160,6 +166,7 @@ impl Game {
         }
 
         self.update_hito(command, dt);
+        self.scroll(dt);
 
         if self.life <= 0 {
             self.is_over = true;
@@ -187,6 +194,34 @@ impl Game {
         }
 
         return ret;
+    }
+
+    pub fn scroll(&mut self, dt: u32) -> bool {
+        if !self.can_pass(self.hito.x, self.hito.y + 1) {
+            return false;
+        }
+        for i in 0..(Field::HEI - 1) {
+            self.data[i as usize] = self.data[(i + 1) as usize];
+        }
+
+        for i in 0..Field::WID {
+            self.data[(Field::HEI - 1) as usize][i as usize] = Chara::EMPTY;
+        }
+
+        if self.isfloor {
+            let (pos, _type) = self.generate_floor();
+        }
+
+        // invert @isfloor
+        self.isfloor = !self.isfloor;
+
+        if !self.can_pass(self.hito.x, self.hito.y + 1) {
+            if self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::BLOCK {
+                self.requested_sounds.push("foot.wav");
+            }
+        }
+
+        return true;
     }
 
     pub fn can_pass(&self, x: i32, y: i32) -> bool {
