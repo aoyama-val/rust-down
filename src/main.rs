@@ -224,7 +224,7 @@ fn render(
     render_font(
         canvas,
         font,
-        "SCORE:".to_string(),
+        format!("SCORE:{}", game.score).to_string(),
         Field::RIGHT + 32,
         300,
         Color::RGB(255, 255, 255),

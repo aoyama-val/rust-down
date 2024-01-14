@@ -92,6 +92,8 @@ pub struct Game {
     pub time: u32,
     pub count: i32,
     pub fps: i32,
+    pub score: i32,
+    pub highscore: Vec<i32>,
 }
 
 impl Game {
@@ -120,6 +122,8 @@ impl Game {
             time: 0,
             count: 0,
             fps: 0,
+            score: 0,
+            highscore: Vec::new(),
         };
 
         // 最初の床を生成
@@ -129,13 +133,6 @@ impl Game {
     }
 
     pub fn generate_floor(&mut self) -> (i32, Chara) {
-        // self.floors = Vec::new();
-        // self.floors.push(Floor::new(
-        //     Chara::BLOCK,
-        //     (Field::WID - Field::FLOORWID) / 2,
-        //     Field::HEI - 1,
-        // ));
-
         let mut pos = self.rand(Field::WID + Field::FLOORWID) - Field::FLOORWID;
         if pos < 0 {
             pos = 0;
@@ -175,16 +172,10 @@ impl Game {
             return;
         }
 
-        match command {
-            _ => {}
-        }
-
         self.count_fps(dt);
     }
 
-    pub fn update_hito(&mut self, command: Command, dt: u32) -> i32 {
-        let mut ret: i32 = 0;
-
+    pub fn update_hito(&mut self, command: Command, dt: u32) {
         if command == Command::Left {
             if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
                 self.hito.x -= 1;
@@ -194,8 +185,6 @@ impl Game {
                 self.hito.x += 1;
             }
         }
-
-        return ret;
     }
 
     pub fn scroll(&mut self, dt: u32) -> bool {
@@ -222,6 +211,8 @@ impl Game {
                 self.requested_sounds.push("foot.wav");
             }
         }
+
+        self.score += 1;
 
         return true;
     }
