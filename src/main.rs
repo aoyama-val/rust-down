@@ -319,7 +319,7 @@ fn render(
 
     // render gauge
     if game.life > 0 {
-        let color = if game.is_gauge_red() {
+        let color = if game.gauge.is_red {
             Color::RGB(255, 0, 0)
         } else {
             Color::RGB(255, 255, 255)

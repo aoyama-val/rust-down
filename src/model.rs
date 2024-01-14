@@ -158,6 +158,26 @@ impl Timer {
     }
 }
 
+pub struct DamageGauge {
+    pub damagetimer: Timer,
+    pub flashtimer: Timer,
+    pub damaging: bool,
+    pub flashing: bool,
+    pub is_red: bool,
+}
+
+impl DamageGauge {
+    pub fn new() -> DamageGauge {
+        DamageGauge {
+            damagetimer: Timer::new(Wait::DAMAGE),
+            flashtimer: Timer::new(Wait::GAUGEFLASH),
+            damaging: false,
+            flashing: false,
+            is_red: false,
+        }
+    }
+}
+
 pub struct Game {
     pub rng: StdRng,
     pub is_over: bool,
@@ -176,9 +196,7 @@ pub struct Game {
     pub score: i32,
     pub highscore: Vec<i32>,
     pub falltimer: Timer,
-    pub damagetimer: Timer,
-    pub damaging: bool,
-    pub flashing: bool,
+    pub gauge: DamageGauge,
 }
 
 impl Game {
@@ -210,9 +228,7 @@ impl Game {
             score: 0,
             highscore: Vec::new(),
             falltimer: Timer::new(Wait::FALL),
-            damagetimer: Timer::new(Wait::DAMAGE),
-            damaging: false,
-            flashing: false,
+            gauge: DamageGauge::new(),
         };
 
         // 最初の床を生成
@@ -298,22 +314,31 @@ impl Game {
         if self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
             && !self.hito.muteki
         {
-            if self.damaging == false {
-                self.damaging = true;
+            // damage start
+            if self.gauge.damaging == false {
+                self.gauge.damaging = true;
                 self.hito.start_flashing();
-                self.flashing = true;
+                self.gauge.flashing = true;
             }
-            self.damagetimer.add(dt);
-            while self.damagetimer.is_reached() {
+
+            self.gauge.damagetimer.add(dt);
+            while self.gauge.damagetimer.is_reached() {
                 self.requested_sounds.push("damage.wav");
                 self.life -= 1;
             }
+
+            self.gauge.flashtimer.add(dt);
+            while self.gauge.flashtimer.is_reached() {
+                self.gauge.is_red = !self.gauge.is_red;
+            }
         } else {
-            if self.damaging {
-                self.damaging = false;
+            // damage stop
+            if self.gauge.damaging {
+                self.gauge.damaging = false;
                 self.hito.stop_flashing();
-                self.flashing = false;
-                self.damagetimer.reset();
+                self.gauge.flashing = false;
+                self.gauge.is_red = false;
+                self.gauge.damagetimer.reset();
             }
         }
     }
