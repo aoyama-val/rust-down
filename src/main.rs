@@ -9,11 +9,12 @@ use sdl2::ttf::Sdl2TtfContext;
 use sdl2::video::{Window, WindowContext};
 use std::collections::HashMap;
 use std::fs;
+use Field;
 mod model;
 use crate::model::*;
 
-pub const SCREEN_WIDTH: i32 = 640;
-pub const SCREEN_HEIGHT: i32 = 480;
+pub const SCREEN_W: i32 = 640;
+pub const SCREEN_H: i32 = 480;
 
 struct Image<'a> {
     texture: Texture<'a>,
@@ -45,7 +46,7 @@ pub fn main() -> Result<(), String> {
 
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem
-        .window("rust-down", SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32)
+        .window("rust-down", SCREEN_W as u32, SCREEN_H as u32)
         .position_centered()
         .opengl()
         .build()
@@ -205,12 +206,106 @@ fn render(
     render_font(
         canvas,
         font,
-        "HOGE".to_string(),
-        SCREEN_WIDTH / 2,
-        SCREEN_HEIGHT / 2,
-        Color::RGBA(128, 128, 255, 255),
-        true,
+        format!("FPS:{}", 120).to_string(),
+        640 - 80,
+        0,
+        Color::RGB(127, 127, 127),
+        false,
     );
+
+    render_font(
+        canvas,
+        font,
+        "SCORE RANKING".to_string(),
+        Field::RIGHT + 32,
+        2,
+        Color::RGB(255, 255, 255),
+        false,
+    );
+
+    render_font(
+        canvas,
+        font,
+        "SCORE:".to_string(),
+        Field::RIGHT + 32,
+        300,
+        Color::RGB(255, 255, 255),
+        false,
+    );
+
+    render_font(
+        canvas,
+        font,
+        "LIFE".to_string(),
+        Field::RIGHT + 32,
+        330,
+        Color::RGB(255, 255, 255),
+        false,
+    );
+
+    render_font(
+        canvas,
+        font,
+        "Ver.1.0.0".to_string(),
+        640 - 106,
+        460,
+        Color::RGB(127, 127, 127),
+        false,
+    );
+
+    // render walls
+    for i in 0..Field::HEI {
+        let image = resources.images.get("wall.bmp").unwrap();
+        canvas
+            .copy(
+                &image.texture,
+                Rect::new(0, 0, image.w, image.h),
+                Rect::new(Field::LEFT - CHAR, CHAR * i, image.w, image.h),
+            )
+            .unwrap();
+        canvas
+            .copy(
+                &image.texture,
+                Rect::new(0, 0, image.w, image.h),
+                Rect::new(Field::RIGHT, CHAR * i, image.w, image.h),
+            )
+            .unwrap();
+    }
+
+    // render floors
+
+    // render items
+
+    // render hito
+    let image = resources.images.get("hito.bmp").unwrap();
+    canvas
+        .copy(
+            &image.texture,
+            Rect::new(CHAR * game.hito.hitonum, 0, CHAR as u32, CHAR as u32),
+            Rect::new(
+                Field::LEFT + (game.hito.x + 1) * CHAR,
+                Field::TOP + game.hito.y * CHAR,
+                CHAR as u32,
+                CHAR as u32,
+            ),
+        )
+        .unwrap();
+
+    // render gauge
+    let color = if game.is_gauge_red() {
+        Color::RGB(255, 0, 0)
+    } else {
+        Color::RGB(255, 255, 255)
+    };
+    canvas.set_draw_color(color);
+    canvas.fill_rect(Rect::new(
+        Field::RIGHT + 80,
+        SCREEN_H / 10 * 7,
+        (((SCREEN_W - (CHAR * Field::WID) - 108) * game.life) / 100) as u32,
+        16,
+    ))?;
+
+    // render effects
 
     canvas.present();
 
