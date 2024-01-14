@@ -89,6 +89,9 @@ pub struct Game {
     pub floors: Vec<Floor>,
     pub isfloor: bool,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
+    pub time: u32,
+    pub count: i32,
+    pub fps: i32,
 }
 
 impl Game {
@@ -114,6 +117,9 @@ impl Game {
             floors: Vec::new(),
             isfloor: false,
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
+            time: 0,
+            count: 0,
+            fps: 0,
         };
 
         game
@@ -178,6 +184,8 @@ impl Game {
         match command {
             _ => {}
         }
+
+        self.count_fps(dt);
     }
 
     pub fn update_hito(&mut self, command: Command, dt: u32) -> i32 {
@@ -237,5 +245,15 @@ impl Game {
 
     pub fn rand(&mut self, max: i32) -> i32 {
         self.rng.gen_range(0..max)
+    }
+
+    pub fn count_fps(&mut self, dt: u32) {
+        self.time += dt;
+        self.count += 1;
+        if self.time >= 1000 {
+            self.fps = self.count;
+            self.time -= 1000;
+            self.count = 0;
+        }
     }
 }
