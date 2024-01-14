@@ -70,7 +70,7 @@ pub fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut game = Game::new();
-    game.init();
+    game.reset();
 
     println!("Keys:");
     println!("  Left, Right : Move player");
@@ -78,7 +78,7 @@ pub fn main() -> Result<(), String> {
     let mut before;
     let mut now = timer.ticks();
 
-    music.play(-1)?;
+    // music.play(-1)?;
 
     'running: loop {
         let mut command = Command::None;
@@ -94,7 +94,7 @@ pub fn main() -> Result<(), String> {
                     }
                     if game.is_over {
                         game = Game::new();
-                        game.init();
+                        game.reset();
                     } else {
                         match code {
                             Keycode::Left => command = Command::Left,
@@ -272,9 +272,29 @@ fn render(
             .unwrap();
     }
 
-    // render floors
-
-    // render items
+    // render floors and items
+    for y in 0..Field::HEI {
+        for x in 0..Field::WID {
+            match game.data[y as usize][x as usize] {
+                Chara::BLOCK => {
+                    render_chara(canvas, resources, x, y, "floor.bmp", 0);
+                }
+                Chara::HARI => {
+                    render_chara(canvas, resources, x, y, "floor.bmp", 1);
+                }
+                Chara::STAR => {
+                    render_chara(canvas, resources, x, y, "item.bmp", 0);
+                }
+                Chara::PARA => {
+                    render_chara(canvas, resources, x, y, "item.bmp", 1);
+                }
+                Chara::OMORI => {
+                    render_chara(canvas, resources, x, y, "item.bmp", 2);
+                }
+                _ => {}
+            }
+        }
+    }
 
     // render hito
     let image = resources.images.get("hito.bmp").unwrap();
@@ -310,6 +330,24 @@ fn render(
     canvas.present();
 
     Ok(())
+}
+
+fn render_chara(
+    canvas: &mut Canvas<Window>,
+    resources: &mut Resources,
+    x: i32,
+    y: i32,
+    image: &str,
+    image_index: usize,
+) {
+    let image = resources.images.get(image).unwrap();
+    canvas
+        .copy(
+            &image.texture,
+            Rect::new(CHAR * image_index as i32, 0, CHAR as u32, CHAR as u32),
+            Rect::new(CHAR * (x + 1), CHAR * y, CHAR as u32, CHAR as u32),
+        )
+        .unwrap();
 }
 
 fn render_font(
