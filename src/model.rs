@@ -105,12 +105,12 @@ impl Game {
         println!("random seed = {}", timestamp);
         // let rng = StdRng::seed_from_u64(0);
 
-        let game = Game {
+        let mut game = Game {
             rng: rng,
             is_over: false,
             rest_count: 0,
             success_count: 0,
-            life: 0,
+            life: 100,
             requested_sounds: Vec::new(),
             requested_musics: Vec::new(),
             hito: Hito::new(),
@@ -122,16 +122,10 @@ impl Game {
             fps: 0,
         };
 
-        game
-    }
-
-    pub fn reset(&mut self) {
-        self.life = 100;
-
-        self.isfloor = false;
-
         // 最初の床を生成
-        self.generate_floor();
+        game.generate_floor();
+
+        game
     }
 
     pub fn generate_floor(&mut self) -> (i32, Chara) {

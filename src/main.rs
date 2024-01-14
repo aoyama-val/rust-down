@@ -70,7 +70,6 @@ pub fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut game = Game::new();
-    game.reset();
 
     println!("Keys:");
     println!("  Left, Right : Move player");
@@ -94,7 +93,6 @@ pub fn main() -> Result<(), String> {
                     }
                     if game.is_over {
                         game = Game::new();
-                        game.reset();
                     } else {
                         match code {
                             Keycode::Left => command = Command::Left,
