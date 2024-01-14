@@ -84,6 +84,7 @@ pub struct Game {
     pub success_count: i32,
     pub life: i32,
     pub requested_sounds: Vec<&'static str>,
+    pub requested_musics: Vec<&'static str>,
     pub hito: Hito,
     pub floors: Vec<Floor>,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
@@ -107,6 +108,7 @@ impl Game {
             success_count: 0,
             life: 0,
             requested_sounds: Vec::new(),
+            requested_musics: Vec::new(),
             hito: Hito::new(),
             floors: Vec::new(),
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
@@ -157,8 +159,40 @@ impl Game {
             return;
         }
 
+        self.update_hito(command, dt);
+
+        if self.life <= 0 {
+            self.is_over = true;
+            self.requested_musics.push("halt");
+            self.requested_sounds.push("gameover.wav");
+            return;
+        }
+
         match command {
             _ => {}
+        }
+    }
+
+    pub fn update_hito(&mut self, command: Command, dt: u32) -> i32 {
+        let mut ret: i32 = 0;
+
+        if command == Command::Left {
+            if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
+                self.hito.x -= 1;
+            }
+        } else if command == Command::Right {
+            if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
+                self.hito.x += 1;
+            }
+        }
+
+        return ret;
+    }
+
+    pub fn can_pass(&self, x: i32, y: i32) -> bool {
+        match self.data[y as usize][x as usize] {
+            Chara::EMPTY | Chara::STAR | Chara::PARA | Chara::OMORI => true,
+            _ => false,
         }
     }
 

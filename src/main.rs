@@ -303,7 +303,7 @@ fn render(
             &image.texture,
             Rect::new(CHAR * game.hito.hitonum, 0, CHAR as u32, CHAR as u32),
             Rect::new(
-                Field::LEFT + (game.hito.x + 1) * CHAR,
+                Field::LEFT + game.hito.x * CHAR,
                 Field::TOP + game.hito.y * CHAR,
                 CHAR as u32,
                 CHAR as u32,
