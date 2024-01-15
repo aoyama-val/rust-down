@@ -160,6 +160,16 @@ impl Timer {
     }
 }
 
+// Timerが規定値に達した場合に$blockを実行する
+macro_rules! wait {
+    ($timer_name:expr, $dt:ident, $block:block) => {
+        $timer_name.add($dt);
+        while $timer_name.is_reached() {
+            $block
+        }
+    };
+}
+
 pub struct DamageGauge {
     pub damagetimer: Timer,
     pub flashtimer: Timer,
@@ -273,13 +283,9 @@ impl Game {
         self.update_hito(command, dt);
         self.update_damage(dt);
 
-        let callback = || {
+        wait!(self.falltimer, dt, {
             self.scroll(dt);
-        };
-        self.falltimer.add(dt);
-        while self.falltimer.is_reached() {
-            self.scroll(dt);
-        }
+        });
 
         if self.life <= 0 {
             self.is_over = true;
@@ -292,8 +298,7 @@ impl Game {
     }
 
     pub fn update_hito(&mut self, command: Command, dt: u32) {
-        self.hito.walktimer.add(dt);
-        while self.hito.walktimer.is_reached() {
+        wait!(self.hito.walktimer, dt, {
             if command == Command::Left {
                 if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
                     self.hito.x -= 1;
@@ -303,13 +308,12 @@ impl Game {
                     self.hito.x += 1;
                 }
             }
-        }
+        });
 
         if self.hito.flashing {
-            self.hito.flashtimer.add(dt);
-            while self.hito.flashtimer.is_reached() {
+            wait!(self.hito.flashtimer, dt, {
                 self.hito.hitonum = 1 - self.hito.hitonum; // 0:white 1:red
-            }
+            });
         }
     }
 
@@ -324,16 +328,14 @@ impl Game {
                 self.gauge.flashing = true;
             }
 
-            self.gauge.damagetimer.add(dt);
-            while self.gauge.damagetimer.is_reached() {
+            wait!(self.gauge.damagetimer, dt, {
                 self.requested_sounds.push("damage.wav");
                 self.life -= 1;
-            }
+            });
 
-            self.gauge.flashtimer.add(dt);
-            while self.gauge.flashtimer.is_reached() {
+            wait!(self.gauge.flashtimer, dt, {
                 self.gauge.is_red = !self.gauge.is_red;
-            }
+            });
         } else {
             // damage stop
             if self.gauge.damaging {
