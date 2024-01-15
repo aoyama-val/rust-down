@@ -375,6 +375,15 @@ impl Game {
                 self.hito.hitonum = 1 - self.hito.hitonum; // 0:white 1:red
             });
         }
+
+        if self.hito.muteki {
+            wait!(self.hito.mutekiflashtimer, dt, {
+                self.hito.hitonum += 1;
+                if self.hito.hitonum > 6 {
+                    self.hito.hitonum = 0;
+                }
+            });
+        }
     }
 
     pub fn set_scroll_wait(&mut self, wait: i32) {
