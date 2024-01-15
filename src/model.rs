@@ -5,7 +5,8 @@ use self::Field::{FLOORWID, HEI};
 
 pub const CHAR: i32 = 16;
 pub const HARI_PER_FLOOR: i32 = 30; // 30%
-pub const ITEM_PERCENT: i32 = 15;
+                                    // pub const ITEM_PERCENT: i32 = 15;
+pub const ITEM_PERCENT: i32 = 100;
 pub const MUTEKI_TIME: i32 = 4000; // 4sec (length of MUTEKI bgm)
 pub const HIGHSCORES: i32 = 10;
 
@@ -45,6 +46,7 @@ pub struct Hito {
     pub x: i32,
     pub y: i32,
     pub hitonum: i32,
+    pub hide: bool,
     pub muteki: bool,
     pub para: bool,
     pub omori: bool,
@@ -63,6 +65,7 @@ impl Hito {
             x: Field::WID / 2 - 1,
             y: Field::HEI / 2,
             hitonum: 0,
+            hide: false,
             muteki: false,
             para: false,
             omori: false,
@@ -103,6 +106,38 @@ pub enum Chara {
     HITOWAVE,
     HITOMUTEKI,
 }
+
+pub enum EffectType {
+    BREAK, // 無敵＆重りで床を破壊したときのエフェクト
+    PANG,  // パラシュートで針の上に着地したときのエフェクト
+    PTS,   // 未使用。床を破壊したときに10pt加算する構想だった模様
+}
+
+pub struct Effect {
+    pub x: i32,
+    pub y: i32,
+    pub _type: EffectType,
+    pub timer: Timer,
+    pub state: i32,
+    pub dead: bool,
+}
+
+impl Effect {
+    pub fn new(x: i32, y: i32, _type: EffectType, timer: Timer) -> Effect {
+        Effect {
+            x,
+            y,
+            _type,
+            timer,
+            state: 0,
+            dead: false,
+        }
+    }
+}
+
+pub const STATES_BREAK: i32 = 3;
+pub const STATES_PANG: i32 = 3;
+pub const STATES_PTS: i32 = 7;
 
 pub struct Timer {
     waittime: i32,
@@ -210,9 +245,11 @@ pub struct Game {
     pub hito: Hito,
     pub isfloor: bool,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
+    pub effects: Vec<Effect>,
     pub score: i32,
     pub highscore: Vec<i32>,
     pub falltimer: Timer,
+    pub gameovertimer: Timer,
     pub gauge: DamageGauge,
     pub now: u32,
     pub system: System,
@@ -238,9 +275,11 @@ impl Game {
             hito: Hito::new(),
             isfloor: false,
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
+            effects: Vec::new(),
             score: 0,
             highscore: Vec::new(),
             falltimer: Timer::new(Wait::FALL),
+            gameovertimer: Timer::new(Wait::GAMEOVER),
             gauge: DamageGauge::new(),
             now: 0,
             system: System::new(),
@@ -281,8 +320,13 @@ impl Game {
 
         self.update_hito(command, dt);
         self.update_damage(dt);
+        self.update_effects(dt);
 
         if self.is_over {
+            wait!(self.gameovertimer, dt, {
+                self.hito.hide = true;
+                // TODO add highscore
+            });
             return;
         }
 
@@ -367,11 +411,25 @@ impl Game {
                 self.hito.para = false;
                 self.set_scroll_wait(Wait::FALL);
                 self.requested_sounds.push("spank.wav");
-                // TODO: add Game.effects.add(:pang,@x,@y)
+                self.effects.push(Effect::new(
+                    self.hito.x,
+                    self.hito.y,
+                    EffectType::PANG,
+                    Timer::new(150),
+                ));
             }
 
             // break!
-            // TODO: implement
+            if self.hito.omori && self.hito.muteki {
+                if self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::BLOCK {
+                    self.field_break(self.hito.x, self.hito.y + 1);
+                } else if self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
+                {
+                    wait!(self.hito.haribreaktimer, dt, {
+                        self.field_break(self.hito.x, self.hito.y + 1);
+                    });
+                }
+            }
         }
 
         if self.hito.flashing {
@@ -388,6 +446,13 @@ impl Game {
                 }
             });
         }
+    }
+
+    pub fn field_break(&mut self, x: i32, y: i32) {
+        self.data[y as usize][x as usize] = Chara::EMPTY;
+        self.effects
+            .push(Effect::new(x, y, EffectType::BREAK, Timer::new(150)));
+        self.requested_sounds.push("break.wav");
     }
 
     pub fn set_scroll_wait(&mut self, wait: i32) {
@@ -427,6 +492,38 @@ impl Game {
         }
     }
 
+    pub fn update_effects(&mut self, dt: u32) {
+        for effect in &mut self.effects {
+            match effect._type {
+                EffectType::BREAK => {
+                    wait!(effect.timer, dt, {
+                        effect.state += 1;
+                        if effect.state >= STATES_BREAK {
+                            effect.dead = true;
+                        }
+                    });
+                }
+                EffectType::PANG => {
+                    wait!(effect.timer, dt, {
+                        effect.state += 1;
+                        if effect.state >= STATES_PANG {
+                            effect.dead = true;
+                        }
+                    });
+                }
+                EffectType::PTS => {
+                    wait!(effect.timer, dt, {
+                        effect.state += 1;
+                        if effect.state >= STATES_PTS {
+                            effect.dead = true;
+                        }
+                    });
+                }
+            }
+        }
+        self.effects.retain(|effect| !effect.dead);
+    }
+
     pub fn scroll(&mut self) -> bool {
         if !self.can_pass(self.hito.x, self.hito.y + 1) {
             return false;
@@ -439,6 +536,9 @@ impl Game {
             self.data[(Field::HEI - 1) as usize][i as usize] = Chara::EMPTY;
         }
 
+        self.effects_scroll();
+
+        // make new floor(if @isfloor) & item(if @isfloor&&rand)
         if self.isfloor {
             let (pos, _type) = self.generate_floor();
 
@@ -469,6 +569,15 @@ impl Game {
         self.score += 1;
 
         return true;
+    }
+
+    pub fn effects_scroll(&mut self) {
+        for effect in &mut self.effects {
+            effect.y -= 1;
+            if effect.y == 0 {
+                effect.dead = true;
+            }
+        }
     }
 
     pub fn can_pass(&self, x: i32, y: i32) -> bool {

@@ -105,10 +105,7 @@ pub fn main() -> Result<(), String> {
                     if code == Keycode::Escape {
                         break 'running;
                     }
-                    if game.is_over
-                        && code == Keycode::Space
-                        && sdl2::mixer::get_playing_channels_number() == 0
-                    {
+                    if game.is_over && game.hito.hide && code == Keycode::Space {
                         game = Game::new();
                         music.play(-1)?;
                     }
@@ -308,28 +305,30 @@ fn render(
     }
 
     // render hito
-    let image = if game.hito.omori {
-        resources.images.get("omori.bmp").unwrap()
-    } else if game.hito.para {
-        resources.images.get("para.bmp").unwrap()
-    } else {
-        resources.images.get("hito.bmp").unwrap()
-    };
-    canvas
-        .copy(
-            &image.texture,
-            Rect::new(CHAR * game.hito.hitonum, 0, CHAR as u32, CHAR as u32),
-            Rect::new(
-                Field::LEFT + game.hito.x * CHAR,
-                Field::TOP + game.hito.y * CHAR,
-                CHAR as u32,
-                CHAR as u32,
-            ),
-        )
-        .unwrap();
+    if !game.hito.hide {
+        let image = if game.hito.omori {
+            resources.images.get("omori.bmp").unwrap()
+        } else if game.hito.para {
+            resources.images.get("para.bmp").unwrap()
+        } else {
+            resources.images.get("hito.bmp").unwrap()
+        };
+        canvas
+            .copy(
+                &image.texture,
+                Rect::new(CHAR * game.hito.hitonum, 0, CHAR as u32, CHAR as u32),
+                Rect::new(
+                    Field::LEFT + game.hito.x * CHAR,
+                    Field::TOP + game.hito.y * CHAR,
+                    CHAR as u32,
+                    CHAR as u32,
+                ),
+            )
+            .unwrap();
+    }
 
     // render sakebi
-    if game.is_over {
+    if game.is_over && !game.hito.hide {
         let image = resources.images.get("sakebi.bmp").unwrap();
         let x = if game.hito.x < Field::WID / 2 {
             Field::LEFT + (game.hito.x + 1) * CHAR
@@ -344,6 +343,37 @@ fn render(
                 Rect::new(x, y, image.w, image.h),
             )
             .unwrap();
+    }
+
+    // render effects
+    for effect in &game.effects {
+        match effect._type {
+            EffectType::BREAK => {
+                let image = resources.images.get("effect.bmp").unwrap();
+                let dx = Field::LEFT + effect.x * CHAR - 16;
+                let dy = Field::TOP + effect.y * CHAR - 24;
+                canvas
+                    .copy(
+                        &image.texture,
+                        Rect::new(48 * effect.state, 0, 48, 24),
+                        Rect::new(dx, dy, 48, 24),
+                    )
+                    .unwrap();
+            }
+            EffectType::PANG => {
+                let image = resources.images.get("effect.bmp").unwrap();
+                let dx = Field::LEFT + effect.x * CHAR - 16;
+                let dy = Field::TOP + effect.y * CHAR - 24;
+                canvas
+                    .copy(
+                        &image.texture,
+                        Rect::new(48 * effect.state, 40, 48, 24),
+                        Rect::new(dx, dy, 48, 24),
+                    )
+                    .unwrap();
+            }
+            EffectType::PTS => todo!(),
+        }
     }
 
     // render gauge
