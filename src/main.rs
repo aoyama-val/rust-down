@@ -217,7 +217,7 @@ fn render(
     render_font(
         canvas,
         font,
-        format!("FPS:{}", game.fps).to_string(),
+        format!("FPS:{}", game.system.fps).to_string(),
         640 - 80,
         0,
         Color::RGB(127, 127, 127),

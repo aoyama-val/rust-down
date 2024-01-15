@@ -175,6 +175,32 @@ impl DamageGauge {
     }
 }
 
+pub struct System {
+    pub time: u32,
+    pub count: i32,
+    pub fps: i32,
+}
+
+impl System {
+    pub fn new() -> System {
+        System {
+            time: 0,
+            count: 0,
+            fps: 0,
+        }
+    }
+
+    pub fn count_fps(&mut self, dt: u32) {
+        self.time += dt;
+        self.count += 1;
+        if self.time >= 1000 {
+            self.fps = self.count;
+            self.time -= 1000;
+            self.count = 0;
+        }
+    }
+}
+
 pub struct Game {
     pub rng: StdRng,
     pub is_over: bool,
@@ -184,14 +210,12 @@ pub struct Game {
     pub hito: Hito,
     pub isfloor: bool,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
-    pub time: u32,
-    pub count: i32,
-    pub fps: i32,
     pub score: i32,
     pub highscore: Vec<i32>,
     pub falltimer: Timer,
     pub gauge: DamageGauge,
     pub now: u32,
+    pub system: System,
 }
 
 impl Game {
@@ -214,14 +238,12 @@ impl Game {
             hito: Hito::new(),
             isfloor: false,
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
-            time: 0,
-            count: 0,
-            fps: 0,
             score: 0,
             highscore: Vec::new(),
             falltimer: Timer::new(Wait::FALL),
             gauge: DamageGauge::new(),
             now: 0,
+            system: System::new(),
         };
 
         // 最初の床を生成
@@ -274,7 +296,7 @@ impl Game {
             return;
         }
 
-        self.count_fps(dt);
+        self.system.count_fps(dt);
     }
 
     pub fn update_hito(&mut self, command: Command, dt: u32) {
@@ -442,15 +464,5 @@ impl Game {
 
     pub fn rand(&mut self, max: i32) -> i32 {
         self.rng.gen_range(0..max)
-    }
-
-    pub fn count_fps(&mut self, dt: u32) {
-        self.time += dt;
-        self.count += 1;
-        if self.time >= 1000 {
-            self.fps = self.count;
-            self.time -= 1000;
-            self.count = 0;
-        }
     }
 }
