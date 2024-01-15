@@ -1,7 +1,7 @@
 use rand::prelude::*;
 use std::time;
 
-use self::Field::{FLOORWID, HEI};
+use self::field::{FLOORWID, HEI};
 
 pub const CHAR: i32 = 16;
 pub const HARI_PER_FLOOR: i32 = 30; // 30%
@@ -9,7 +9,7 @@ pub const ITEM_PERCENT: i32 = 15;
 pub const MUTEKI_TIME: i32 = 4000; // 4sec (length of MUTEKI bgm)
 pub const HIGHSCORES: i32 = 10;
 
-pub mod Field {
+pub mod field {
     pub const WID: i32 = 18; // フィールド幅（壁を含まない。セル数）
     pub const HEI: i32 = 30; // フィールド高さ（セル数）
     pub const LEFT: i32 = super::CHAR * 1; //
@@ -19,7 +19,7 @@ pub mod Field {
     pub const FLOORWID: i32 = 5; // 1個の床のセル数
 }
 
-pub mod Wait {
+pub mod wait {
     pub const FALL: i32 = 40;
     pub const FALL_PARA: i32 = 60;
     pub const FALL_OMORI: i32 = 20;
@@ -61,8 +61,8 @@ pub struct Hito {
 impl Hito {
     pub fn new() -> Hito {
         Hito {
-            x: Field::WID / 2 - 1,
-            y: Field::HEI / 2,
+            x: field::WID / 2 - 1,
+            y: field::HEI / 2,
             hitonum: 0,
             hide: false,
             muteki: false,
@@ -70,11 +70,11 @@ impl Hito {
             omori: false,
             flashing: false,
             mutekistart: 0,
-            walktimer: Timer::new(Wait::WALK),
-            flashtimer: Timer::new(Wait::HITOFLASH),
-            wavetimer: Timer::new(Wait::HITOWAVE),
-            mutekiflashtimer: Timer::new(Wait::MUTEKIFLASH),
-            haribreaktimer: Timer::new(Wait::HARIBREAK),
+            walktimer: Timer::new(wait::WALK),
+            flashtimer: Timer::new(wait::HITOFLASH),
+            wavetimer: Timer::new(wait::HITOWAVE),
+            mutekiflashtimer: Timer::new(wait::MUTEKIFLASH),
+            haribreaktimer: Timer::new(wait::HARIBREAK),
         }
     }
 
@@ -200,8 +200,8 @@ pub struct DamageGauge {
 impl DamageGauge {
     pub fn new() -> DamageGauge {
         DamageGauge {
-            damagetimer: Timer::new(Wait::DAMAGE),
-            flashtimer: Timer::new(Wait::GAUGEFLASH),
+            damagetimer: Timer::new(wait::DAMAGE),
+            flashtimer: Timer::new(wait::GAUGEFLASH),
             damaging: false,
             flashing: false,
             is_red: false,
@@ -243,7 +243,7 @@ pub struct Game {
     pub requested_musics: Vec<&'static str>,
     pub hito: Hito,
     pub isfloor: bool,
-    pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
+    pub data: [[Chara; field::WID as usize]; field::HEI as usize],
     pub effects: Vec<Effect>,
     pub score: i32,
     pub highscore: Vec<i32>,
@@ -273,12 +273,12 @@ impl Game {
             requested_musics: Vec::new(),
             hito: Hito::new(),
             isfloor: false,
-            data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
+            data: [[Chara::EMPTY; field::WID as usize]; field::HEI as usize],
             effects: Vec::new(),
             score: 0,
             highscore: Vec::new(),
-            falltimer: Timer::new(Wait::FALL),
-            gameovertimer: Timer::new(Wait::GAMEOVER),
+            falltimer: Timer::new(wait::FALL),
+            gameovertimer: Timer::new(wait::GAMEOVER),
             gauge: DamageGauge::new(),
             now: 0,
             system: System::new(),
@@ -291,12 +291,12 @@ impl Game {
     }
 
     pub fn generate_floor(&mut self) -> (i32, Chara) {
-        let mut pos = self.rand(Field::WID + Field::FLOORWID) - Field::FLOORWID;
+        let mut pos = self.rand(field::WID + field::FLOORWID) - field::FLOORWID;
         if pos < 0 {
             pos = 0;
         }
-        if pos > Field::WID - Field::FLOORWID {
-            pos = Field::WID - Field::FLOORWID;
+        if pos > field::WID - field::FLOORWID {
+            pos = field::WID - field::FLOORWID;
         }
 
         let _type;
@@ -307,8 +307,8 @@ impl Game {
             _type = Chara::BLOCK;
         }
 
-        for i in 0..Field::FLOORWID {
-            self.data[(Field::HEI - 1) as usize][(pos + i) as usize] = _type;
+        for i in 0..field::FLOORWID {
+            self.data[(field::HEI - 1) as usize][(pos + i) as usize] = _type;
         }
 
         return (pos, _type);
@@ -353,7 +353,7 @@ impl Game {
                         self.hito.x -= 1;
                     }
                 } else if command == Command::Right {
-                    if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
+                    if self.hito.x < field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
                         self.hito.x += 1;
                     }
                 }
@@ -370,14 +370,14 @@ impl Game {
                 }
                 Chara::PARA => {
                     self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
-                    self.set_scroll_wait(Wait::FALL_PARA);
+                    self.set_scroll_wait(wait::FALL_PARA);
                     self.hito.para = true;
                     self.hito.omori = false;
                     self.requested_sounds.push("getpara.wav");
                 }
                 Chara::OMORI => {
                     self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
-                    self.set_scroll_wait(Wait::FALL_OMORI);
+                    self.set_scroll_wait(wait::FALL_OMORI);
                     self.hito.omori = true;
                     self.hito.para = false;
                     self.requested_sounds.push("getomori.wav");
@@ -391,7 +391,7 @@ impl Game {
                 && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32 * 0.8)
             {
                 self.hito.omori = false;
-                self.set_scroll_wait(Wait::FALL);
+                self.set_scroll_wait(wait::FALL);
             }
 
             // stop muteki
@@ -408,7 +408,7 @@ impl Game {
                 && !self.hito.muteki
             {
                 self.hito.para = false;
-                self.set_scroll_wait(Wait::FALL);
+                self.set_scroll_wait(wait::FALL);
                 self.requested_sounds.push("spank.wav");
                 self.effects.push(Effect::new(
                     self.hito.x,
@@ -526,12 +526,12 @@ impl Game {
         if !self.can_pass(self.hito.x, self.hito.y + 1) {
             return false;
         }
-        for i in 0..(Field::HEI - 1) {
+        for i in 0..(field::HEI - 1) {
             self.data[i as usize] = self.data[(i + 1) as usize];
         }
 
-        for i in 0..Field::WID {
-            self.data[(Field::HEI - 1) as usize][i as usize] = Chara::EMPTY;
+        for i in 0..field::WID {
+            self.data[(field::HEI - 1) as usize][i as usize] = Chara::EMPTY;
         }
 
         self.effects_scroll();

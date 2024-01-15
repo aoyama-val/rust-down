@@ -1,3 +1,4 @@
+use field;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mixer;
@@ -8,14 +9,13 @@ use sdl2::ttf::Sdl2TtfContext;
 use sdl2::video::{Window, WindowContext};
 use std::collections::HashMap;
 use std::fs;
-use Field;
 mod model;
 use crate::model::*;
 
 pub const SCREEN_W: i32 = 640;
 pub const SCREEN_H: i32 = 480;
 
-mod Sound {
+mod sound {
     pub const MAX_CHANNELS: i32 = 10;
     pub const CH_DAMAGE: i32 = 4; // channel for damage.wav;
     pub const CH_MUTEKI: i32 = 3;
@@ -136,7 +136,7 @@ fn init_mixer() {
         chunk_size,
     )
     .expect("cannot open audio");
-    mixer::allocate_channels(Sound::MAX_CHANNELS);
+    mixer::allocate_channels(sound::MAX_CHANNELS);
 }
 
 fn load_resources<'a>(
@@ -226,7 +226,7 @@ fn render(
         canvas,
         font,
         "SCORE RANKING".to_string(),
-        Field::RIGHT + 32,
+        field::RIGHT + 32,
         2,
         Color::RGB(255, 255, 255),
         false,
@@ -236,7 +236,7 @@ fn render(
         canvas,
         font,
         format!("SCORE:{}", game.score).to_string(),
-        Field::RIGHT + 32,
+        field::RIGHT + 32,
         300,
         Color::RGB(255, 255, 255),
         false,
@@ -246,7 +246,7 @@ fn render(
         canvas,
         font,
         "LIFE".to_string(),
-        Field::RIGHT + 32,
+        field::RIGHT + 32,
         330,
         Color::RGB(255, 255, 255),
         false,
@@ -268,7 +268,7 @@ fn render(
             canvas,
             font,
             format!("{:2}: {:6}", i + 1, score).to_string(),
-            Field::RIGHT + 32,
+            field::RIGHT + 32,
             25 * (i + 1) as i32,
             Color::RGB(200, 255, 255),
             false,
@@ -276,27 +276,27 @@ fn render(
     }
 
     // render walls
-    for i in 0..Field::HEI {
+    for i in 0..field::HEI {
         let image = resources.images.get("wall.bmp").unwrap();
         canvas
             .copy(
                 &image.texture,
                 Rect::new(0, 0, image.w, image.h),
-                Rect::new(Field::LEFT - CHAR, CHAR * i, image.w, image.h),
+                Rect::new(field::LEFT - CHAR, CHAR * i, image.w, image.h),
             )
             .unwrap();
         canvas
             .copy(
                 &image.texture,
                 Rect::new(0, 0, image.w, image.h),
-                Rect::new(Field::RIGHT + 1, CHAR * i, image.w, image.h),
+                Rect::new(field::RIGHT + 1, CHAR * i, image.w, image.h),
             )
             .unwrap();
     }
 
     // render floors and items
-    for y in 0..Field::HEI {
-        for x in 0..Field::WID {
+    for y in 0..field::HEI {
+        for x in 0..field::WID {
             match game.data[y as usize][x as usize] {
                 Chara::BLOCK => {
                     render_chara(canvas, resources, x, y, "floor.bmp", 0);
@@ -332,8 +332,8 @@ fn render(
                 &image.texture,
                 Rect::new(CHAR * game.hito.hitonum, 0, CHAR as u32, CHAR as u32),
                 Rect::new(
-                    Field::LEFT + game.hito.x * CHAR,
-                    Field::TOP + game.hito.y * CHAR,
+                    field::LEFT + game.hito.x * CHAR,
+                    field::TOP + game.hito.y * CHAR,
                     CHAR as u32,
                     CHAR as u32,
                 ),
@@ -344,12 +344,12 @@ fn render(
     // render sakebi
     if game.is_over && !game.hito.hide {
         let image = resources.images.get("sakebi.bmp").unwrap();
-        let x = if game.hito.x < Field::WID / 2 {
-            Field::LEFT + (game.hito.x + 1) * CHAR
+        let x = if game.hito.x < field::WID / 2 {
+            field::LEFT + (game.hito.x + 1) * CHAR
         } else {
-            Field::LEFT + (game.hito.x - 2) * CHAR
+            field::LEFT + (game.hito.x - 2) * CHAR
         };
-        let y = Field::TOP + game.hito.y * CHAR;
+        let y = field::TOP + game.hito.y * CHAR;
         canvas
             .copy(
                 &image.texture,
@@ -364,8 +364,8 @@ fn render(
         match effect._type {
             EffectType::BREAK => {
                 let image = resources.images.get("effect.bmp").unwrap();
-                let dx = Field::LEFT + effect.x * CHAR - 16;
-                let dy = Field::TOP + effect.y * CHAR - 24;
+                let dx = field::LEFT + effect.x * CHAR - 16;
+                let dy = field::TOP + effect.y * CHAR - 24;
                 canvas
                     .copy(
                         &image.texture,
@@ -376,8 +376,8 @@ fn render(
             }
             EffectType::PANG => {
                 let image = resources.images.get("effect.bmp").unwrap();
-                let dx = Field::LEFT + effect.x * CHAR - 16;
-                let dy = Field::TOP + effect.y * CHAR - 24;
+                let dx = field::LEFT + effect.x * CHAR - 16;
+                let dy = field::TOP + effect.y * CHAR - 24;
                 canvas
                     .copy(
                         &image.texture,
@@ -398,9 +398,9 @@ fn render(
         };
         canvas.set_draw_color(color);
         canvas.fill_rect(Rect::new(
-            Field::RIGHT + 80,
+            field::RIGHT + 80,
             SCREEN_H / 10 * 7,
-            (((SCREEN_W - (CHAR * Field::WID) - 108) * game.life) / 100) as u32,
+            (((SCREEN_W - (CHAR * field::WID) - 108) * game.life) / 100) as u32,
             16,
         ))?;
     }
@@ -465,9 +465,9 @@ fn play_sounds(game: &mut Game, resources: &Resources) {
             .expect("cannot get sound");
 
         let channel = match *sound_key {
-            "damage.wav" => sdl2::mixer::Channel(Sound::CH_DAMAGE),
-            "muteki.wav" => sdl2::mixer::Channel(Sound::CH_MUTEKI),
-            "break.wav" => sdl2::mixer::Channel(Sound::CH_BREAK),
+            "damage.wav" => sdl2::mixer::Channel(sound::CH_DAMAGE),
+            "muteki.wav" => sdl2::mixer::Channel(sound::CH_MUTEKI),
+            "break.wav" => sdl2::mixer::Channel(sound::CH_BREAK),
             _ => sdl2::mixer::Channel::all(),
         };
         channel.play(&chunk, 0).expect("cannot play sound");
