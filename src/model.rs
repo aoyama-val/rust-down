@@ -173,6 +173,17 @@ impl Timer {
         return false;
     }
 
+    pub fn wait<F: FnMut()>(&mut self, dt: u32, mut callback: F) {
+        self.wait += dt as i32;
+        while self.wait >= self.waittime {
+            self.wait -= self.waittime;
+            callback();
+            if self.wait < self.waittime {
+                self.reset();
+            }
+        }
+    }
+
     pub fn set_wait(&mut self, t: i32) {
         assert!(t > 0);
         self.waittime = t;
@@ -322,12 +333,18 @@ impl Game {
         self.update_effects(dt);
 
         if self.is_over {
-            wait!(self.gameovertimer, dt, {
+            self.gameovertimer.wait(dt, || {
                 if !self.hito.hide {
                     self.hito.hide = true;
                     self.add_highscore();
                 }
             });
+            // wait!(self.gameovertimer, dt, {
+            //     if !self.hito.hide {
+            //         self.hito.hide = true;
+            //         self.add_highscore();
+            //     }
+            // });
             return;
         }
 
