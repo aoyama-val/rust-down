@@ -85,7 +85,7 @@ pub fn main() -> Result<(), String> {
     let mut before;
     let mut now = timer.ticks();
 
-    // music.play(-1)?;
+    music.play(-1)?;
 
     'running: loop {
         let mut command = Command::None;
@@ -110,6 +110,7 @@ pub fn main() -> Result<(), String> {
                         && sdl2::mixer::get_playing_channels_number() == 0
                     {
                         game = Game::new();
+                        music.play(-1)?;
                     }
                 }
                 _ => {}
@@ -122,6 +123,7 @@ pub fn main() -> Result<(), String> {
         render(&mut canvas, &game, &mut resources)?;
 
         play_sounds(&mut game, &resources);
+        play_music(&mut game, &resources);
     }
 
     Ok(())
@@ -412,4 +414,24 @@ fn play_sounds(game: &mut Game, resources: &Resources) {
         channel.play(&chunk, 0).expect("cannot play sound");
     }
     game.requested_sounds = Vec::new();
+}
+
+fn play_music(game: &mut Game, resources: &Resources) {
+    for music_key in &game.requested_musics {
+        match *music_key {
+            "halt" => {
+                sdl2::mixer::Music::halt();
+            }
+            "pause" => {
+                sdl2::mixer::Music::pause();
+            }
+            "resume" => {
+                sdl2::mixer::Music::resume();
+            }
+            _ => {
+                println!("Unknown music: {}", music_key);
+            }
+        }
+    }
+    game.requested_musics = Vec::new();
 }
