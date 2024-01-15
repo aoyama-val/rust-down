@@ -46,8 +46,10 @@ pub struct Hito {
     pub y: i32,
     pub hitonum: i32,
     pub muteki: bool,
+    pub para: bool,
     pub omori: bool,
     pub flashing: bool,
+    pub mutekistart: u32,
     pub walktimer: Timer,
     pub flashtimer: Timer,
     pub wavetimer: Timer,
@@ -62,8 +64,10 @@ impl Hito {
             y: Field::HEI / 2,
             hitonum: 0,
             muteki: false,
+            para: false,
             omori: false,
             flashing: false,
+            mutekistart: 0,
             walktimer: Timer::new(Wait::WALK),
             flashtimer: Timer::new(Wait::HITOFLASH),
             wavetimer: Timer::new(Wait::HITOWAVE),
@@ -209,6 +213,7 @@ pub struct Game {
     pub highscore: Vec<i32>,
     pub falltimer: Timer,
     pub gauge: DamageGauge,
+    pub now: u32,
 }
 
 impl Game {
@@ -241,6 +246,7 @@ impl Game {
             highscore: Vec::new(),
             falltimer: Timer::new(Wait::FALL),
             gauge: DamageGauge::new(),
+            now: 0,
         };
 
         // 最初の床を生成
@@ -276,6 +282,7 @@ impl Game {
     }
 
     pub fn update(&mut self, command: Command, dt: u32) {
+        self.now += dt;
         if self.is_over {
             return;
         }
@@ -299,6 +306,7 @@ impl Game {
 
     pub fn update_hito(&mut self, command: Command, dt: u32) {
         wait!(self.hito.walktimer, dt, {
+            // move
             if command == Command::Left {
                 if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
                     self.hito.x -= 1;
@@ -310,11 +318,71 @@ impl Game {
             }
         });
 
+        // get item
+        match self.data[self.hito.y as usize][self.hito.x as usize] {
+            Chara::STAR => {
+                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                self.hito.muteki = true;
+                self.hito.mutekistart = self.now;
+                self.requested_musics.push("pause");
+                self.requested_sounds.push("muteki.wav");
+            }
+            Chara::PARA => {
+                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                self.set_scroll_wait(Wait::FALL_PARA);
+                self.hito.para = true;
+                self.hito.omori = false;
+                self.requested_sounds.push("getpara.wav");
+            }
+            Chara::OMORI => {
+                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                self.set_scroll_wait(Wait::FALL_OMORI);
+                self.hito.omori = true;
+                self.hito.para = false;
+                self.requested_sounds.push("getomori.wav");
+            }
+            _ => {}
+        }
+
+        // stop omori
+        if self.hito.omori
+            && self.hito.muteki
+            && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32 * 0.8)
+        {
+            self.hito.omori = false;
+            self.set_scroll_wait(Wait::FALL);
+        }
+
+        // stop muteki
+        if self.hito.muteki && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32) {
+            self.hito.muteki = false;
+            self.hito.hitonum = 0;
+            self.requested_musics.push("resume");
+        }
+
+        // stop para
+        if self.hito.para
+            && self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
+            && !self.hito.muteki
+        {
+            self.hito.para = false;
+            self.set_scroll_wait(Wait::FALL);
+            self.requested_sounds.push("spank.wav");
+            // TODO: add Game.effects.add(:pang,@x,@y)
+        }
+
+        // break!
+        // TODO: implement
+
         if self.hito.flashing {
             wait!(self.hito.flashtimer, dt, {
                 self.hito.hitonum = 1 - self.hito.hitonum; // 0:white 1:red
             });
         }
+    }
+
+    pub fn set_scroll_wait(&mut self, wait: i32) {
+        self.falltimer.set_wait(wait);
     }
 
     pub fn update_damage(&mut self, dt: u32) {

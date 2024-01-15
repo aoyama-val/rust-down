@@ -306,7 +306,13 @@ fn render(
     }
 
     // render hito
-    let image = resources.images.get("hito.bmp").unwrap();
+    let image = if game.hito.omori {
+        resources.images.get("omori.bmp").unwrap()
+    } else if game.hito.para {
+        resources.images.get("para.bmp").unwrap()
+    } else {
+        resources.images.get("hito.bmp").unwrap()
+    };
     canvas
         .copy(
             &image.texture,
