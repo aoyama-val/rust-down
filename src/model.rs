@@ -323,8 +323,10 @@ impl Game {
 
         if self.is_over {
             wait!(self.gameovertimer, dt, {
-                self.hito.hide = true;
-                self.add_highscore();
+                if !self.hito.hide {
+                    self.hito.hide = true;
+                    self.add_highscore();
+                }
             });
             return;
         }
