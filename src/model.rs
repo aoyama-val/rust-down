@@ -104,25 +104,6 @@ pub enum Chara {
     HITOMUTEKI,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Floor {
-    pub _type: Chara,
-    pub x: i32,
-    pub y: i32,
-    pub broken: bool,
-}
-
-impl Floor {
-    pub fn new(__type: Chara, _x: i32, _y: i32) -> Floor {
-        Floor {
-            _type: __type,
-            x: _x,
-            y: _y,
-            broken: false,
-        }
-    }
-}
-
 pub struct Timer {
     waittime: i32,
     wait: i32,
@@ -197,13 +178,10 @@ impl DamageGauge {
 pub struct Game {
     pub rng: StdRng,
     pub is_over: bool,
-    pub rest_count: i32,
-    pub success_count: i32,
     pub life: i32,
     pub requested_sounds: Vec<&'static str>,
     pub requested_musics: Vec<&'static str>,
     pub hito: Hito,
-    pub floors: Vec<Floor>,
     pub isfloor: bool,
     pub data: [[Chara; Field::WID as usize]; Field::HEI as usize],
     pub time: u32,
@@ -230,13 +208,10 @@ impl Game {
         let mut game = Game {
             rng: rng,
             is_over: false,
-            rest_count: 0,
-            success_count: 0,
             life: 100,
             requested_sounds: Vec::new(),
             requested_musics: Vec::new(),
             hito: Hito::new(),
-            floors: Vec::new(),
             isfloor: false,
             data: [[Chara::EMPTY; Field::WID as usize]; Field::HEI as usize],
             time: 0,
@@ -277,8 +252,6 @@ impl Game {
         }
 
         return (pos, _type);
-
-        // self.floors.push(Floor::new(_type, pos, Field::HEI - 1));
     }
 
     pub fn update(&mut self, command: Command, dt: u32) {
