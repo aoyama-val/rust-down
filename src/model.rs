@@ -1,5 +1,5 @@
 use rand::prelude::*;
-use std::{fs::File, num, time};
+use std::time;
 
 use self::Field::{FLOORWID, HEI};
 
@@ -278,6 +278,7 @@ impl Game {
 
     pub fn update(&mut self, command: Command, dt: u32) {
         self.now += dt;
+
         if self.is_over {
             return;
         }
@@ -286,7 +287,7 @@ impl Game {
         self.update_damage(dt);
 
         wait!(self.falltimer, dt, {
-            self.scroll(dt);
+            self.scroll();
         });
 
         if self.life <= 0 {
@@ -411,7 +412,7 @@ impl Game {
         }
     }
 
-    pub fn scroll(&mut self, dt: u32) -> bool {
+    pub fn scroll(&mut self) -> bool {
         if !self.can_pass(self.hito.x, self.hito.y + 1) {
             return false;
         }
