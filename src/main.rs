@@ -328,6 +328,24 @@ fn render(
         )
         .unwrap();
 
+    // render sakebi
+    if game.is_over {
+        let image = resources.images.get("sakebi.bmp").unwrap();
+        let x = if game.hito.x < Field::WID / 2 {
+            Field::LEFT + (game.hito.x + 1) * CHAR
+        } else {
+            Field::LEFT + (game.hito.x - 2) * CHAR
+        };
+        let y = Field::TOP + game.hito.y * CHAR;
+        canvas
+            .copy(
+                &image.texture,
+                Rect::new(0, 0, image.w, image.h),
+                Rect::new(x, y, image.w, image.h),
+            )
+            .unwrap();
+    }
+
     // render gauge
     if game.life > 0 {
         let color = if game.gauge.is_red {

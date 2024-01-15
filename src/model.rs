@@ -279,12 +279,12 @@ impl Game {
     pub fn update(&mut self, command: Command, dt: u32) {
         self.now += dt;
 
+        self.update_hito(command, dt);
+        self.update_damage(dt);
+
         if self.is_over {
             return;
         }
-
-        self.update_hito(command, dt);
-        self.update_damage(dt);
 
         wait!(self.falltimer, dt, {
             self.scroll();
@@ -294,6 +294,7 @@ impl Game {
             self.is_over = true;
             self.requested_musics.push("halt");
             self.requested_sounds.push("gameover.wav");
+            self.hito.start_flashing();
             return;
         }
 
@@ -301,74 +302,77 @@ impl Game {
     }
 
     pub fn update_hito(&mut self, command: Command, dt: u32) {
-        wait!(self.hito.walktimer, dt, {
-            // move
-            if command == Command::Left {
-                if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
-                    self.hito.x -= 1;
+        if !self.is_over {
+            wait!(self.hito.walktimer, dt, {
+                // move
+                if command == Command::Left {
+                    if self.hito.x > 0 && self.can_pass(self.hito.x - 1, self.hito.y) {
+                        self.hito.x -= 1;
+                    }
+                } else if command == Command::Right {
+                    if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
+                        self.hito.x += 1;
+                    }
                 }
-            } else if command == Command::Right {
-                if self.hito.x < Field::WID - 1 && self.can_pass(self.hito.x + 1, self.hito.y) {
-                    self.hito.x += 1;
-                }
-            }
-        });
+            });
 
-        // get item
-        match self.data[self.hito.y as usize][self.hito.x as usize] {
-            Chara::STAR => {
-                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
-                self.hito.muteki = true;
-                self.hito.mutekistart = self.now;
-                self.requested_musics.push("pause");
-                self.requested_sounds.push("muteki.wav");
+            // get item
+            match self.data[self.hito.y as usize][self.hito.x as usize] {
+                Chara::STAR => {
+                    self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                    self.hito.muteki = true;
+                    self.hito.mutekistart = self.now;
+                    self.requested_musics.push("pause");
+                    self.requested_sounds.push("muteki.wav");
+                }
+                Chara::PARA => {
+                    self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                    self.set_scroll_wait(Wait::FALL_PARA);
+                    self.hito.para = true;
+                    self.hito.omori = false;
+                    self.requested_sounds.push("getpara.wav");
+                }
+                Chara::OMORI => {
+                    self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
+                    self.set_scroll_wait(Wait::FALL_OMORI);
+                    self.hito.omori = true;
+                    self.hito.para = false;
+                    self.requested_sounds.push("getomori.wav");
+                }
+                _ => {}
             }
-            Chara::PARA => {
-                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
-                self.set_scroll_wait(Wait::FALL_PARA);
-                self.hito.para = true;
+
+            // stop omori
+            if self.hito.omori
+                && self.hito.muteki
+                && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32 * 0.8)
+            {
                 self.hito.omori = false;
-                self.requested_sounds.push("getpara.wav");
+                self.set_scroll_wait(Wait::FALL);
             }
-            Chara::OMORI => {
-                self.data[self.hito.y as usize][self.hito.x as usize] = Chara::EMPTY;
-                self.set_scroll_wait(Wait::FALL_OMORI);
-                self.hito.omori = true;
+
+            // stop muteki
+            if self.hito.muteki && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32)
+            {
+                self.hito.muteki = false;
+                self.hito.hitonum = 0;
+                self.requested_musics.push("resume");
+            }
+
+            // stop para
+            if self.hito.para
+                && self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
+                && !self.hito.muteki
+            {
                 self.hito.para = false;
-                self.requested_sounds.push("getomori.wav");
+                self.set_scroll_wait(Wait::FALL);
+                self.requested_sounds.push("spank.wav");
+                // TODO: add Game.effects.add(:pang,@x,@y)
             }
-            _ => {}
-        }
 
-        // stop omori
-        if self.hito.omori
-            && self.hito.muteki
-            && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32 * 0.8)
-        {
-            self.hito.omori = false;
-            self.set_scroll_wait(Wait::FALL);
+            // break!
+            // TODO: implement
         }
-
-        // stop muteki
-        if self.hito.muteki && ((self.now - self.hito.mutekistart) as f32 >= MUTEKI_TIME as f32) {
-            self.hito.muteki = false;
-            self.hito.hitonum = 0;
-            self.requested_musics.push("resume");
-        }
-
-        // stop para
-        if self.hito.para
-            && self.data[(self.hito.y + 1) as usize][self.hito.x as usize] == Chara::HARI
-            && !self.hito.muteki
-        {
-            self.hito.para = false;
-            self.set_scroll_wait(Wait::FALL);
-            self.requested_sounds.push("spank.wav");
-            // TODO: add Game.effects.add(:pang,@x,@y)
-        }
-
-        // break!
-        // TODO: implement
 
         if self.hito.flashing {
             wait!(self.hito.flashtimer, dt, {
@@ -402,7 +406,9 @@ impl Game {
             }
 
             wait!(self.gauge.damagetimer, dt, {
-                self.requested_sounds.push("damage.wav");
+                if !self.is_over {
+                    self.requested_sounds.push("damage.wav");
+                }
                 self.life -= 1;
             });
 
