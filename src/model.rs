@@ -13,7 +13,7 @@ pub mod Field {
     pub const WID: i32 = 18; // フィールド幅（壁を含まない。セル数）
     pub const HEI: i32 = 30; // フィールド高さ（セル数）
     pub const LEFT: i32 = super::CHAR * 1; //
-    pub const RIGHT: i32 = LEFT + (super::CHAR * WID); // Ruby版では-1している。理由不明
+    pub const RIGHT: i32 = LEFT + (super::CHAR * WID) - 1; // -1している理由不明
     pub const TOP: i32 = 0;
     pub const BOTTOM: i32 = TOP + (super::CHAR * HEI);
     pub const FLOORWID: i32 = 5; // 1個の床のセル数

@@ -276,7 +276,7 @@ fn render(
             .copy(
                 &image.texture,
                 Rect::new(0, 0, image.w, image.h),
-                Rect::new(Field::RIGHT, CHAR * i, image.w, image.h),
+                Rect::new(Field::RIGHT + 1, CHAR * i, image.w, image.h),
             )
             .unwrap();
     }
