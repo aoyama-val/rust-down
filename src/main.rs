@@ -106,7 +106,9 @@ pub fn main() -> Result<(), String> {
                         break 'running;
                     }
                     if game.is_over && game.hito.hide && code == Keycode::Space {
+                        let old_highscore = game.highscore;
                         game = Game::new();
+                        game.highscore = old_highscore;
                         music.play(-1)?;
                     }
                 }
@@ -261,6 +263,19 @@ fn render(
         false,
     );
 
+    // render high scores
+    for (i, score) in game.highscore.iter().enumerate() {
+        render_font(
+            canvas,
+            font,
+            format!("{:2}: {:6}", i + 1, score).to_string(),
+            Field::RIGHT + 32,
+            25 * (i + 1) as i32,
+            Color::RGB(200, 255, 255),
+            false,
+        );
+    }
+
     // render walls
     for i in 0..Field::HEI {
         let image = resources.images.get("wall.bmp").unwrap();
@@ -391,8 +406,6 @@ fn render(
             16,
         ))?;
     }
-
-    // render effects
 
     canvas.present();
 

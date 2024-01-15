@@ -5,8 +5,7 @@ use self::Field::{FLOORWID, HEI};
 
 pub const CHAR: i32 = 16;
 pub const HARI_PER_FLOOR: i32 = 30; // 30%
-                                    // pub const ITEM_PERCENT: i32 = 15;
-pub const ITEM_PERCENT: i32 = 100;
+pub const ITEM_PERCENT: i32 = 15;
 pub const MUTEKI_TIME: i32 = 4000; // 4sec (length of MUTEKI bgm)
 pub const HIGHSCORES: i32 = 10;
 
@@ -325,7 +324,7 @@ impl Game {
         if self.is_over {
             wait!(self.gameovertimer, dt, {
                 self.hito.hide = true;
-                // TODO add highscore
+                self.add_highscore();
             });
             return;
         }
@@ -585,6 +584,17 @@ impl Game {
             Chara::EMPTY | Chara::STAR | Chara::PARA | Chara::OMORI => true,
             _ => false,
         }
+    }
+
+    pub fn add_highscore(&mut self) {
+        self.highscore.push(self.score);
+        self.highscore.sort_by(|a, b| b.cmp(a));
+        self.highscore = self
+            .highscore
+            .iter()
+            .take(HIGHSCORES as usize)
+            .map(|x| *x)
+            .collect();
     }
 
     pub fn rand(&mut self, max: i32) -> i32 {
