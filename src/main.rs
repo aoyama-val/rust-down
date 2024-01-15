@@ -2,9 +2,8 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mixer;
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Rect;
 use sdl2::render::{BlendMode, Canvas, Texture, TextureCreator};
-use sdl2::sys::KeyCode;
 use sdl2::ttf::Sdl2TtfContext;
 use sdl2::video::{Window, WindowContext};
 use std::collections::HashMap;
@@ -122,7 +121,7 @@ pub fn main() -> Result<(), String> {
         render(&mut canvas, &game, &mut resources)?;
 
         play_sounds(&mut game, &resources);
-        play_music(&mut game, &resources);
+        play_music(&mut game);
     }
 
     Ok(())
@@ -386,8 +385,7 @@ fn render(
                         Rect::new(dx, dy, 48, 24),
                     )
                     .unwrap();
-            }
-            EffectType::PTS => todo!(),
+            } // EffectType::PTS => todo!(),
         }
     }
 
@@ -477,7 +475,7 @@ fn play_sounds(game: &mut Game, resources: &Resources) {
     game.requested_sounds = Vec::new();
 }
 
-fn play_music(game: &mut Game, resources: &Resources) {
+fn play_music(game: &mut Game) {
     for music_key in &game.requested_musics {
         match *music_key {
             "halt" => {

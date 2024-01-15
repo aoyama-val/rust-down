@@ -15,7 +15,7 @@ pub mod Field {
     pub const LEFT: i32 = super::CHAR * 1; //
     pub const RIGHT: i32 = LEFT + (super::CHAR * WID) - 1; // -1している理由不明
     pub const TOP: i32 = 0;
-    pub const BOTTOM: i32 = TOP + (super::CHAR * HEI);
+    // pub const BOTTOM: i32 = TOP + (super::CHAR * HEI);
     pub const FLOORWID: i32 = 5; // 1個の床のセル数
 }
 
@@ -31,7 +31,7 @@ pub mod Wait {
     pub const GAUGEFLASH: i32 = 60;
     pub const HARIBREAK: i32 = 140;
     pub const GAMEOVER: i32 = 3400; // ms
-    pub const DEMO_TIME: i32 = 1000 * 60 * 3; // 5min
+                                    // pub const DEMO_TIME: i32 = 1000 * 60 * 3; // 5min
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -91,25 +91,25 @@ impl Hito {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Chara {
     EMPTY,
-    WALL,
+    // WALL,
     BLOCK,
     HARI,
-    HITO,
-    SAKEBI,
+    // HITO,
+    // SAKEBI,
     STAR,
     PARA,
     OMORI,
-    HITOPARA,
-    HITOOMORI,
-    HITODEAD,
-    HITOWAVE,
-    HITOMUTEKI,
+    // HITOPARA,
+    // HITOOMORI,
+    // HITODEAD,
+    // HITOWAVE,
+    // HITOMUTEKI,
 }
 
 pub enum EffectType {
     BREAK, // 無敵＆重りで床を破壊したときのエフェクト
     PANG,  // パラシュートで針の上に着地したときのエフェクト
-    PTS,   // 未使用。床を破壊したときに10pt加算する構想だった模様
+           // PTS,   // 未使用。床を破壊したときに10pt加算する構想だった模様
 }
 
 pub struct Effect {
@@ -136,7 +136,7 @@ impl Effect {
 
 pub const STATES_BREAK: i32 = 3;
 pub const STATES_PANG: i32 = 3;
-pub const STATES_PTS: i32 = 7;
+// pub const STATES_PTS: i32 = 7;
 
 pub struct Timer {
     waittime: i32,
@@ -509,15 +509,14 @@ impl Game {
                             effect.dead = true;
                         }
                     });
-                }
-                EffectType::PTS => {
-                    wait!(effect.timer, dt, {
-                        effect.state += 1;
-                        if effect.state >= STATES_PTS {
-                            effect.dead = true;
-                        }
-                    });
-                }
+                } // EffectType::PTS => {
+                  //     wait!(effect.timer, dt, {
+                  //         effect.state += 1;
+                  //         if effect.state >= STATES_PTS {
+                  //             effect.dead = true;
+                  //         }
+                  //     });
+                  // }
             }
         }
         self.effects.retain(|effect| !effect.dead);
